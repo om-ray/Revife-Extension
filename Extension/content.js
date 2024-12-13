@@ -210,6 +210,7 @@ function setupFilterButtonListeners() {
   const buttonTexts = {
     withSearch: ["Brands", "Colour", "Pattern", "Material", "Fabric"],
     withoutSearch: [
+      "Size",
       "Women/Men/Kids",
       "Sleeve length",
       "Length",
@@ -380,6 +381,37 @@ function HandleFilterWithoutSearch(buttonId) {
       const itemList = selectorDiv.querySelector("ul");
       const submitButton = selectorDiv.querySelector(".sc-eCssSg");
 
+      if (button.textContent === "Size") {
+        // Get current sizes from URL
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
+        const currentSizes = params.getAll("sizes");
+
+        // Select checkboxes based on URL params
+        const sizeCheckboxes = selectorDiv.querySelectorAll(
+          'input[name="sizes"]'
+        );
+        sizeCheckboxes.forEach((checkbox) => {
+          if (currentSizes.includes(checkbox.value)) {
+            checkbox.checked = true;
+          }
+        });
+
+        // Add change listener to handle future selections
+        sizeCheckboxes.forEach((checkbox) => {
+          checkbox.addEventListener("change", function () {
+            const selectedCheckboxes = selectorDiv.querySelectorAll(
+              'input[name="sizes"]:checked'
+            );
+            const selectedSizes = Array.from(selectedCheckboxes).map(
+              (cb) => cb.value
+            );
+            handleSizeFilter(selectedSizes);
+          });
+        });
+        return;
+      }
+
       if (itemList && submitButton) {
         let liElements = itemList.querySelectorAll("li");
 
@@ -444,177 +476,22 @@ function HandleFilterWithoutSearch(buttonId) {
   }, 500);
 }
 
-const sizeFilterOptions = {
-  "Women's Clothing": {
-    "International": {
-      sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-      queryPrefix: "WMN-INT-"
-    },
-    "European": {
-      sizes: ["34", "36", "38", "39", "40", "42", "44"],
-      queryPrefix: "WMN-EU-"
-    },
-    "Extra Sizes": {
-      sizes: ["0XL", "1XL", "2XL"],
-      queryPrefix: "WMN-INT-"
-    },
-    "Pants (Inch)": {
-      sizes: ["25", "26", "27", "28", "29", "30", "31", "32", "33"],
-      queryPrefix: "PANTS-INCH-"
-    }
-  },
-  "Men's Clothing": {
-    "International": {
-      sizes: ["XS", "S", "M", "L", "XL", "XXL", "XXXL"],
-      queryPrefix: "MEN-INT-"
-    },
-    "European": {
-      sizes: ["40", "42", "44", "46", "48", "50", "52"],
-      queryPrefix: "MEN-EU-"
-    },
-    "Extra Sizes": {
-      sizes: ["0XL", "1XL", "2XL", "3XL"],
-      queryPrefix: "MEN-INT-"
-    },
-    "Pants (Inch)": {
-      sizes: ["29", "30", "31", "32", "33", "34", "38", "40"],
-      queryPrefix: "PANTS-INCH-"
-    }
-  },
-  "Shoes": {
-    "Women's EU": {
-      sizes: ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44"],
-      queryPrefix: "SHOES-EU-"
-    },
-    "Men's EU": {
-      sizes: ["39", "40", "41", "42", "43", "44", "45", "46", "48"],
-      queryPrefix: "SHOES-EU-"
-    },
-    "Kids": {
-      sizes: ["12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44"],
-      queryPrefix: "SHOES-CM-"
-    }
-  },
-  "Kids": {
-    "CM": {
-      sizes: ["50", "56", "62", "68", "74", "80", "86", "90", "92", "98", "100", "102", "104", "110", "116", "120", "122", "128", "130", "134", "140", "146", "150", "152", "158", "160", "164", "170", "176"],
-      queryPrefix: "CHILD-CM-"
-    }
-  },
-  "Additional": {
-    "Belts (CM)": {
-      sizes: ["80", "85", "90", "95", "100", "105", "110", "115", "120", "130"],
-      queryPrefix: "BELTS-CM-"
-    }
-  }
-};
-
 function handleSizeFilter(selectedSizes) {
-  const params = new URLSearchParams(window.location.search);
-  
-  // Remove all existing size parameters
-  const existingParams = Array.from(params.entries());
-  existingParams.forEach(([key, value]) => {
-    if (key === 'sizes') {
-      params.delete(key);
-    }
+  const url = new URL(window.location.href);
+  const params = new URLSearchParams(url.search);
+
+  params.delete("sizes");
+
+  selectedSizes.forEach((size) => {
+    params.append("sizes", size);
   });
 
-  // Add new size parameters
-  selectedSizes.forEach(size => {
-    params.append('sizes', size);
-  });
+  const newUrl = `${window.location.pathname}?${params.toString()}${
+    window.location.hash
+  }`;
+  window.history.pushState({}, "", newUrl);
 
-  // Update URL without reloading the page
-  const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
-  window.history.pushState({}, '', newUrl);
-  
-  // Trigger URL change handling
   handleURLChange();
-}
-
-function createSizeFilter() {
-  const sizeFilterContainer = document.createElement('div');
-  sizeFilterContainer.className = 'size-filter-container';
-  
-  const sizeButton = document.createElement('button');
-  sizeButton.textContent = 'Size';
-  sizeButton.className = 'filter-button';
-  
-  const sizeDropdown = document.createElement('div');
-  sizeDropdown.className = 'size-dropdown';
-  sizeDropdown.style.display = 'none';
-  
-  // Create category sections
-  Object.entries(sizeFilterOptions).forEach(([category, subcategories]) => {
-    const categorySection = document.createElement('div');
-    categorySection.className = 'size-category';
-    
-    const categoryHeader = document.createElement('h3');
-    categoryHeader.textContent = category;
-    categorySection.appendChild(categoryHeader);
-    
-    Object.entries(subcategories).forEach(([subCategory, {sizes, queryPrefix}]) => {
-      const subCategoryDiv = document.createElement('div');
-      subCategoryDiv.className = 'size-subcategory';
-      
-      const subCategoryHeader = document.createElement('h4');
-      subCategoryHeader.textContent = subCategory;
-      subCategoryDiv.appendChild(subCategoryHeader);
-      
-      const sizeList = document.createElement('div');
-      sizeList.className = 'size-list';
-      
-      sizes.forEach(size => {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = `size-${queryPrefix}${size}`;
-        checkbox.value = `${queryPrefix}${size}`;
-        
-        const label = document.createElement('label');
-        label.htmlFor = checkbox.id;
-        label.textContent = size;
-        
-        const wrapper = document.createElement('div');
-        wrapper.className = 'size-item';
-        wrapper.appendChild(checkbox);
-        wrapper.appendChild(label);
-        
-        sizeList.appendChild(wrapper);
-      });
-      
-      subCategoryDiv.appendChild(sizeList);
-      categorySection.appendChild(subCategoryDiv);
-    });
-    
-    sizeDropdown.appendChild(categorySection);
-  });
-  
-  // Toggle dropdown on button click
-  sizeButton.addEventListener('click', () => {
-    const isHidden = sizeDropdown.style.display === 'none';
-    sizeDropdown.style.display = isHidden ? 'block' : 'none';
-  });
-  
-  // Handle checkbox changes
-  sizeDropdown.addEventListener('change', (e) => {
-    if (e.target.type === 'checkbox') {
-      const selectedCheckboxes = sizeDropdown.querySelectorAll('input[type="checkbox"]:checked');
-      const selectedSizes = Array.from(selectedCheckboxes).map(cb => cb.value);
-      handleSizeFilter(selectedSizes);
-    }
-  });
-  
-  sizeFilterContainer.appendChild(sizeButton);
-  sizeFilterContainer.appendChild(sizeDropdown);
-  
-  // Add to the filter section
-  const filterSection = document.querySelector('.filter-section') || document.createElement('div');
-  if (!filterSection.classList.contains('filter-section')) {
-    filterSection.className = 'filter-section';
-    document.body.appendChild(filterSection);
-  }
-  filterSection.appendChild(sizeFilterContainer);
 }
 
 function createSetDropdown() {
@@ -969,7 +846,6 @@ function initialSetup() {
   RemoveAndShowFilters();
   setupTypeOfItemButtonListener();
   setupFilterButtonListeners();
-  createSizeFilter();
   runChanges();
 }
 
