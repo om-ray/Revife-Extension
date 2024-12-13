@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Revife",
   "version": "1.0",
-  "description": "",
+  "description": "Revife Fashion Automation Extension",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -12,11 +12,24 @@
       "128": "./Images/icon-128.png"
     }
   },
-  "permissions": ["storage", "activeTab"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "identity",
+    "background"
+  ],
+  "host_permissions": [
+    "https://*.firebaseio.com/*",
+    "https://*.firebase.com/*"
+  ],
   "content_scripts": [
     {
       "matches": ["https://www.sellpy.com/search*"],
       "js": ["content.js"]
     }
-  ]
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
 }
